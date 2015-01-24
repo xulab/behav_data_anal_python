@@ -12,8 +12,8 @@ def parse_save_results(filename, savename):
     Results['Trial_inds'] = []
     Settings['Trial_inds'] = []
     
-    behavResults = {}
-    behavSettings = {}
+    SessionResults = []
+    SessionSettings = []
     newSettings_flag = 0
     allResults = {}
     
@@ -34,7 +34,7 @@ def parse_save_results(filename, savename):
                 settingStr = []
             
 
-            if 'Tone Freq' in line or '####' in line:
+            if 'Tone Freq' in line or 'Trial_Start' in line:
                 newSettings_flag = 0
             
             if 'Tone Freq' in line:
@@ -48,30 +48,33 @@ def parse_save_results(filename, savename):
                 if 'EOL' in line or (line[-1] == '\n' and 'Choice=' in line) or '\r\n' in line:
                     #print line
                     ind_trial += 1
-                    Results['Trial_inds'].append(ind_trial)
-                    Settings['Trial_inds'].append(ind_trial)
-                    
+                    # Results['Trial_inds'].append(ind_trial)
+                    # Settings['Trial_inds'].append(ind_trial)
                     resultsStr = line
-                    trial_results = results2dict(resultsStr)
-                    Results = append_results(Results, trial_results)
-                    
-                    trial_settings = settings2dict(settingStr)
-                    if 'currentTone' in trial_settings.keys():
-                        trial_settings['currentTone'] = currentTone
+                    trial_results_dict = results2dict(resultsStr)
+                    trial_results_dict['Trial_inds'] = ind_trial
+                    SessionResults.append(trial_results_dict)
 
-                    Settings = append_results(Settings, trial_settings)
+                    # Results = append_results(Results, trial_results_dict)
+                    trial_settings_dict = settings2dict(settingStr)
+                    if 'currentTone' in trial_settings_dict.keys():
+                        trial_settings_dict['currentTone'] = currentTone
+                    trial_settings_dict['Trial_inds'] = ind_trial
+                    SessionSettings.append(trial_settings_dict)
+
+                    # Settings = append_results(Settings, trial_settings_dict)
     
-    if (not Results['Trial_inds']): # or (not savename):
+    if ind_trial < 1: # or (not savename):
         print 'Warning!: No trial results in ', filename, '!'
         print 'No data to be saved!'
     else:
-        allResults = {'behavResults' : Results,
-                    'behavSettings' : Settings}
+        allResults = {'SessionResults' : SessionResults,
+                    'SessionSettings' : SessionSettings}
         # save_path = '/Users/xun/Nutstore/Projects/'
         # save_name = 'results_{animalName}_{expDate}.mat'.format(**behavResults)
         sio.savemat(savename, allResults)
 
-    return allResults
+    return SessionResults, SessionSettings
 
 
 def results2dict(s):
@@ -91,7 +94,7 @@ def results2dict(s):
                     'numLickRight' : 'Action_numLickRight',
                     'Choice' : 'Action_choice'
                     }
-    s_dict = {}
+    trialResultsDict = {}
 #     s = s.strip('o/')
     msg = s.split('/')
 #     msg.remove(msg[0])
@@ -108,8 +111,8 @@ def results2dict(s):
             val = val.rstrip()
             if val.isdigit():
                 val = int(val)
-            s_dict[key] = val
-    return s_dict
+            trialResultsDict[key] = val
+    return trialResultsDict
 
 
 
@@ -137,28 +140,26 @@ def settings2dict(strList):
     return s_dict
 
 
-
-
-def append_results(all_dict, trial_dict):
-    currentTrialNo = all_dict['Trial_inds'][-1]
-#     print currentTrialNo
-    for key in trial_dict.keys():
-        # If a new key appears after some trial, add the new key, 
-        # and put the value of all previous trials as 0 or ''.
-        if type(trial_dict[key]) is list:
-            tempvar = [] # trial_dict[key][0]
-        elif type(trial_dict[key]) is int:
-            tempvar = 0 #trial_dict[key]
-        elif type(trial_dict[key]) is str:
-            tempvar = ''
+# def append_results(all_dict, trial_dict):
+#     currentTrialNo = all_dict['Trial_inds'][-1]
+# #     print currentTrialNo
+#     for key in trial_dict.keys():
+#         # If a new key appears after some trial, add the new key, 
+#         # and put the value of all previous trials as 0 or ''.
+#         if type(trial_dict[key]) is list:
+#             tempvar = [] # trial_dict[key][0]
+#         elif type(trial_dict[key]) is int:
+#             tempvar = 0 #trial_dict[key]
+#         elif type(trial_dict[key]) is str:
+#             tempvar = ''
             
-        if not key in all_dict.keys():
-#             print trial_dict
-            all_dict[key] = []
-            all_dict[key][0:currentTrialNo-1] = [tempvar]*(currentTrialNo-1)
+#         if not key in all_dict.keys():
+# #             print trial_dict
+#             all_dict[key] = []
+#             all_dict[key][0:currentTrialNo-1] = [tempvar]*(currentTrialNo-1)
 
-        all_dict[key].append(trial_dict[key])
-    return all_dict
+#         all_dict[key].append(trial_dict[key])
+#     return all_dict
 
 
 # <codecell>
